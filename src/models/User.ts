@@ -1,8 +1,21 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
+interface IWeekday {
+    id: number,
+    condition: boolean,
+    weekdayName: string
+}
+interface IAlarms {
+    _id: string,
+    time: string,
+    text: string,
+    condition: boolean,
+    weekday: IWeekday[]
+}
 export interface IUser {
     email: string;
     password: string;
+    alarms: IAlarms[]
 }
 
 export interface IUserModel extends IUser, Document {}

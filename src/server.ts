@@ -5,10 +5,13 @@ import { config } from './config/config';
 import Logging from './library/Logging';
 import userRoute from './routes/userRoute';
 import alarmRoute from './routes/alarmRoute';
+import cors from 'cors'
+import passport from "passport";
+import authRouter from './routes/authRoute';
+import { json } from "body-parser";
 
 const router = express();
 
-/** Connect to Mongo */
 mongoose
     .connect(config.mongo.url, { retryWrites: true, w: 'majority' })
     .then(() => {
@@ -17,15 +20,11 @@ mongoose
     })
     .catch((error) => Logging.error(error));
 
-/** Only Start Server if Mongoose Connects */
 const StartServer = () => {
-    /** Log the request */
     router.use((req, res, next) => {
-        /** Log the req */
         Logging.info(`Incomming - METHOD: [${req.method}] - URL: [${req.url}] - IP: [${req.socket.remoteAddress}]`);
 
         res.on('finish', () => {
-            /** Log the res */
             Logging.info(`Result - METHOD: [${req.method}] - URL: [${req.url}] - IP: [${req.socket.remoteAddress}] - STATUS: [${res.statusCode}]`);
         });
 
@@ -34,8 +33,10 @@ const StartServer = () => {
 
     router.use(express.urlencoded({ extended: true }));
     router.use(express.json());
+    router.use(cors())
+    router.use(json())
+    router.use(passport.initialize());
 
-    /** Rules of our API */
     router.use((req, res, next) => {
         res.header('Access-Control-Allow-Origin', '*');
         res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
@@ -48,14 +49,13 @@ const StartServer = () => {
         next();
     });
 
-    /** Routes */
+    /** Routes **/
     router.use('/api/auth', userRoute);
     router.use('/api/alarm', alarmRoute);
+    router.use('/api', authRouter);
 
-    /** HealthCheck */
     router.get('/ping', (req, res, next) => res.status(200).json({ hello: 'ping' }));
 
-    /** Error handling */
     router.use((req, res, next) => {
         const error = new Error('Not found');
 

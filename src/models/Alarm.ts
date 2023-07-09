@@ -1,16 +1,18 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
+
+interface IWeekday {
+    id: number,
+    condition: boolean,
+    weekdayName: string
+}
+
+
 export interface IAlarm {
     time: string;
     text: string;
     condition: boolean;
-    // weekday: [
-    //     {
-    //         id: string;
-    //         condition: boolean;
-    //         day: string;
-    //     }
-    // ];
+    weekday: IWeekday[]
 }
 
 export interface IAlarmModel extends IAlarm, Document {}
@@ -28,14 +30,11 @@ const AlarmSchema: Schema = new Schema(
         },
         condition: {
             type: Boolean
+        },
+        weekday: {
+            type: Array,
+            required: true
         }
-        // weekday: [
-        //     {
-        //         id: Number,
-        //         day: String,
-        //         condition: Boolean
-        //     }
-        // ]
     },
     {
         timestamps: true

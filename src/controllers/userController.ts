@@ -3,6 +3,7 @@ import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import Logging from '../library/Logging';
+import { IRequest } from '../utils/checkAuth';
 
 const registrationUser = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -85,41 +86,73 @@ const authorizationUser = async (req: Request, res: Response, next: NextFunction
     }
 };
 
-const getUser = async (req: Request, res: Response, next: NextFunction) => {
+const getUser = async (req: IRequest, res: Response, next: NextFunction) => {
     try {
-        const user = await User.find();
-        console.log(user);
-        // if (!user) {
-        //     return res.json({
-        //         message: 'Такого пользователя не существует'
-        //     });
-        // }
+        const user = await User.findById(req.userId)
 
-        // const token = jwt.sign(
-        //     {
-        //         id: user._id
-        //     },
-        //     'sadanodwkmdasdawdqe2wdd v3 jf0i32j=0fjefksdljl',
-        //     { expiresIn: '30d' }
-        // );
+        if(!user) {
+            return res.json({
+                message: 'Такого пользователя не существует'
+            })
+        };
 
-        // res.json({
-        //     user,
-        //     token
-        // });
-    } catch (error) {
-        Logging.error(error);
+        const token = jwt.sign({
+            id: user._id
+        }, 'sadanodwkmdasdawdqe2wdd v3 jf0i32j=0fjefksdljl', { expiresIn: '30d' });
+
         res.json({
-            message: 'Ошибка при получении пользователя'
-        });
+            user,
+            token
+        })
+    } catch (error) {
+        Logging.error(error)
+        res.status(500).json({
+            message: 'Failed to log in'
+        })
     }
 };
 
-export default { registrationUser, authorizationUser, getUser };
+const passwordReset = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { email, password } = req.body
+        const user = await User.findOne({email}) 
+        const salt = bcrypt.genSaltSync(10);
+        const hash = bcrypt.hashSync(password, salt);
 
-// email verification
-// password reset
-// password change
+        if(user){
+            user.password = hash
+            await user.save()
+        }
+
+        res.status(201).json({
+            message: "Пароль успешно изменён!"
+        })        
+    } catch (error) {
+        Logging.error(error)
+        res.status(401).json({
+            message: 'Error when changing the password!'
+        })
+    }
+}
+
+const userFind = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const {email} = req.body
+        const user = await User.findOne({email})
+
+        res.json(user)
+    } catch (error) {
+        Logging.error(error)
+        res.status(401).json({
+            message: 'User nor found!'
+        })
+    }
+}
+
+export default { registrationUser, authorizationUser, getUser, userFind, passwordReset };
+
 
 // google auth
 // facebook auth
+
+
